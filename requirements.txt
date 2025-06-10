@@ -1,0 +1,11 @@
+gradio>=4.16.0
+gtts
+fpdf
+python-dotenv
+openai>=1.0.0
+llama-index>=0.10.28
+llama-index-embeddings-huggingface>=0.1.2
+sentence-transformers>=2.2.2
+transformers>=4.37.0
+nltk==3.8.1
+langchain-community
