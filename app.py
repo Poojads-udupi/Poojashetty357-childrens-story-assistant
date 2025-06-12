@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import pandas as pd
 from datetime import datetime
 from dotenv import load_dotenv
 from fpdf import FPDF
@@ -14,6 +15,7 @@ from langchain_community.chat_models import ChatOpenAI
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 #from huggingface_hub import login
+
 
 # ✅ Load environment variables first
 def load_env_var(var_name):
@@ -44,6 +46,28 @@ llm = ChatOpenAI(temperature=0.6, model_name="gpt-3.5-turbo", openai_api_key=ope
 teen_memory = ConversationBufferMemory()
 embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
+def load_youtube_links():
+    path = os.path.join(os.path.dirname(__file__), "kids_youtube_links.csv")
+    if os.path.exists(path):
+        return pd.read_csv(path, encoding="latin1")  # use encoding to avoid special char errors
+    return pd.DataFrame()
+
+# Load once
+df_links = load_youtube_links()
+
+def get_youtube_link(age, theme):
+    age = age.strip()
+    theme = theme.strip().lower()
+
+    match = df_links[
+        (df_links["age_group"].str.strip() == age) &
+        (df_links["theme"].str.strip().str.lower() == theme)
+    ]
+    if not match.empty:
+        url = match.iloc[0]["links"]
+        desc = match.iloc[0]["description"]
+        return f'<b>{desc}</b><br><a href="{url}" target="_blank">🎥 Watch on YouTube</a>'
+    return "No video available for this selection."
 
 # Preload genre-based RAG
 file_map = {}
@@ -127,7 +151,9 @@ def generate_kids(age, theme, tone, name, length):
     messages = kids_prompt.format_messages(age=age, theme=theme, tone=tone, name=name, length=length)
     story = llm(messages).content
     save_story_to_file(name, story, age_group="kids", tone=tone, theme=theme)
-    return story
+    video_html = get_youtube_link(age, theme)  # from your CSV file
+    return story, video_html
+    
 def generate_kids_audio(story):
     return text_to_speech(story)
 
@@ -140,7 +166,8 @@ teen_story_prompt = ChatPromptTemplate.from_messages([
         "You are an expert teen fiction writer creating captivating and imaginative short stories for teenagers. Include realistic emotions, challenges, and age-appropriate vocabulary."
     ),
     HumanMessagePromptTemplate.from_template(
-        "Write a {length}-word teen story. Tone: {tone}. Character: {name}. Inspiration: {inspiration}"
+        "Write a {length}-word creative gentre realated teen story. The main character should be named {name}. "
+        "Set the tone to {tone}. Use the following inspiration: {inspiration}."
     )
 ])
 
@@ -349,7 +376,7 @@ with gr.Blocks(title="📚 Children's Story Assistant") as app:
             padding: 12px;
             box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
         }
-        #banner-img img {
+        #banner1-img img {
             max-width: 60%;
             height: auto;
             border-radius: 10px;
@@ -377,7 +404,7 @@ with gr.Blocks(title="📚 Children's Story Assistant") as app:
    
 
     with gr.Column():
-        gr.Image(value="banner.jpg", show_label=False, show_download_button=False, container=False, elem_id="banner-img")
+        gr.Image(value="banner1.jpg", show_label=False, show_download_button=False, container=False, elem_id="banner1-img")
 
     # ✅ Kids UI
     with gr.Tab("Kids"):
@@ -386,12 +413,13 @@ with gr.Blocks(title="📚 Children's Story Assistant") as app:
         ✨ Welcome to the Kids Story Generator!
         </div>
         """)
-        age = gr.Dropdown(["1–3", "4–6", "7–9", "10–12"], label="Age")
+        age = gr.Dropdown(["1 to 3", "4 to 6", "7 to 9", "10 to 12"], label="Age")
         theme = gr.Dropdown(["Animals", "Adventure", "Magic", "Bedtime"], label="Theme")
         tone = gr.Dropdown(["Happy", "Funny", "Gentle", "Exciting"], label="Tone")
         name = gr.Textbox(label="Character Name")
         length = gr.Radio(["50", "100", "150"], label="Length (words)")
         output = gr.Textbox(label="Story", lines=10)
+        video_display = gr.HTML(label="Watch Related Video")
         story_btn = gr.Button("📜 Generate Story")
         audio = gr.Audio(label="Listen", autoplay=True)
         audio_btn = gr.Button("🔊 Generate Voice")
@@ -399,7 +427,8 @@ with gr.Blocks(title="📚 Children's Story Assistant") as app:
         pdf_btn = gr.Button("📄 Generate PDF")
         clr = gr.Button("Clear")
 
-        story_btn.click(generate_kids, inputs=[age, theme, tone, name, length], outputs=[output])
+        story_btn.click(generate_kids, inputs=[age, theme, tone, name, length], outputs=[output, video_display])
+
         audio_btn.click(generate_kids_audio, inputs=[output], outputs=[audio])
         pdf_btn.click(generate_kids_pdf, inputs=[output, name], outputs=[pdf])
         clr.click(lambda: ("", None, None), None, [output, audio, pdf])
@@ -439,9 +468,15 @@ with gr.Blocks(title="📚 Children's Story Assistant") as app:
         gr.Markdown("### Your Saved Stories")
 
         story_selector = gr.Dropdown(choices=[], label="Select Story")
-        story_output = gr.Textbox(label="Story", lines=12)
+        editable_box = gr.Textbox(label="✏️ Edit Story", lines=10)
+        tone_input = gr.Dropdown(["Happy", "Exciting", "Serious", "Funny", "Gentle", "Spooky"], label="New Tone")
+        length_input = gr.Radio(["50", "75", "100", "125", "150"], label="New Length (words)")
+    
+        regen_btn = gr.Button("🔄 Regenerate")
+        delete_btn = gr.Button("🗑️ Delete Selected Story")
         refresh_btn = gr.Button("🔄 Load Stories")
 
+    # --- Helper functions ---
         def get_story_titles():
             logs = load_story_logs()
             return [f"{i+1}. {log['character']} ({log['age_group']}, {log['tone']}, {log['theme']})" for i, log in enumerate(logs)]
@@ -457,7 +492,31 @@ with gr.Blocks(title="📚 Children's Story Assistant") as app:
                 return logs[index]["story"]
             return "❌ Invalid selection"
 
+        def delete_story(selected_title):
+            logs = load_story_logs()
+            titles = get_story_titles()
+            if selected_title in titles:
+                index = titles.index(selected_title)
+                del logs[index]
+                # Overwrite the file with remaining logs
+                with open("story_logs.json", "w", encoding="utf-8") as f:
+                    for log in logs:
+                        f.write(json.dumps(log) + "\n")
+                return "", gr.update(choices=get_story_titles())  # Clear story + update dropdown
+            return "❌ Could not delete story", gr.update()
+
+        def regenerate_story(original_text, new_tone, new_length):
+            if not original_text.strip():
+                 return "❌ Please select and edit a story first."
+            character_match = re.search(r'"character":\s*"([^"]+)"', original_text)
+            character = character_match.group(1) if character_match else "Alex"
+            prompt = f"Regenerate the following story with a tone of '{new_tone}' and around {new_length} words:\n\n{original_text}"
+            return llm.predict(prompt)
+
+            # --- UI Logic ---
         refresh_btn.click(fn=refresh_dropdown, outputs=story_selector)
-        story_selector.change(fn=show_story_by_title, inputs=story_selector, outputs=story_output)
+        story_selector.change(fn=show_story_by_title, inputs=story_selector, outputs=editable_box)
+        delete_btn.click(fn=delete_story, inputs=story_selector, outputs=[editable_box, story_selector])
+        regen_btn.click(fn=regenerate_story, inputs=[editable_box, tone_input, length_input], outputs=editable_box)
 
 app.launch()
