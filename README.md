@@ -1,45 +1,137 @@
-Project Report: Children’s Story Assistant – AI-Powered StoryBot
-Project Overview
-Children’s Story Assistant is an AI-driven storytelling application built using Gradio, OpenAI's GPT-3.5 model, and Retrieval-Augmented Generation (RAG). It aims to generate creative, age-appropriate stories for kids and teens, with personalized elements like character names, tone, theme, and genre. The app also offers features such as voice narration (gTTS), PDF export, template uploads, and genre-based retrieval to enrich content quality.
-________________________________________
-Dataset: Custom Curated Story Templates
-Instead of a large-scale public dataset, this project uses domain-specific, manually curated text files that serve as knowledge bases for genre-inspired story generation for teens.
-•	Directory: story_knowledge/teens/
-•	Files: mystery.txt, fantasy.txt, romance.txt, comedy.txt, drama.txt
-•	Structure: Text files contain rich narrative elements such as:
-o	[HOOKS]
-o	[CHARACTERS]
-o	[SCENES]
-o	[TROPES]
-o	[SETTINGS]
-These were manually compiled from online story writing resources and AI-assisted creative writing. They form the basis for RAG-style inspiration prompts using LlamaIndex’s SimpleDirectoryReader.
-________________________________________ Preprocessing Steps
-Since the dataset is unstructured .txt content, minimal preprocessing was applied:
-1.	File Parsing:
-o	Used SimpleDirectoryReader to read and chunk documents.
-o	Stored each genre as a VectorStoreIndex for quick retrieval.
-2.	Section Highlighting:
-o	Used regex to identify [HOOKS], [CHARACTERS], etc.
-o	Applied visual emphasis (e.g., **[HOOKS]**) in Gradio preview using re.sub().
-3.	Prompt Engineering:
-o	Extracted genre themes to enrich prompt templates for the LLM.
-o	Allowed both file upload and live template editing before submission.
-4.	Storage:
-o	User-generated stories saved in story_logs.json with metadata (tone, age_group, theme, timestamp).
-________________________________________
-Challenges Encountered
-Challenge	Solution
-Lack of a structured public dataset	Created lightweight custom genre-specific knowledge base in .txt format
- Integrating RAG with editable templates	Built dual-input logic (upload + inline edit), dynamically created retriever
-Real-time feedback from story	Used Gradio Textbox, Audio, and File components for smooth UX
- Performance on repeated queries	Preloaded retrievers in file_map using load_genre_indexes() at startup
-Story continuity (for sequels)	Tracked last story with last_story_text to generate coherent follow-ups
-________________________________________
-✅ Outcome
-The project resulted in a modular and user-friendly application with:
-•	Dual tabs for Kids and Teens
-•	Optional sequel generation
-•	Story saving, playback, and PDF download
-The app serves as both an educational tool and a creative playground, demonstrating the power of LLMs + RAG + Gradio in a storytelling context.
+Children's Story Assistant-TinyTales AI
+
+Overview
+
+Children's Story Assistant is an AI-powered Gradio application that generates personalized stories for kids and teenagers. Users can choose age groups, tones, themes, and even upload or edit templates for teen stories. The app also offers PDF and audio story exports, story regeneration, and YouTube video suggestions for kids.
+
+---
+
+Features
+
+ Kids Tab
+
+* Age-based story generation (1–12 years)
+* Themes: Animals, Adventure, Magic, Bedtime
+* Tones: Happy, Funny, Gentle, Exciting
+* Text-to-speech audio using gTTS
+* Story PDF download (via FPDF)
+* YouTube video recommendations from a local CSV
+
+ Teens Tab
+
+* Genre-based story generation using RAG (VectorStoreIndex)
+* Genres: Mystery, Comedy, Drama, Romance, Fantasy
+* Upload or edit story inspiration templates
+* Regenerate story sequels
+* Audio narration and downloadable PDF
+  
+My Stories Tab
+
+* View saved stories
+* Edit and regenerate stories with different tones/lengths
+* Delete selected stories
+
+---
+
+Tech Stack
+
+* **Frontend:** Gradio
+* **Backend:** Python
+* **AI Model:** OpenAI GPT-3.5-Turbo (via LangChain)
+* **Embeddings:** Hugging Face Transformers (`sentence-transformers/all-MiniLM-L6-v2`)
+* **Vector Indexing:** LlamaIndex
+* **Text-to-Speech:** Google TTS (gTTS)
+* **PDF Export:** FPDF
+* **Env Management:** dotenv
+
+---
+
+Setup Instructions
+
+ 1. Clone the repository
+
+```bash
+git clone <your-repo-url>
+cd childrens-story-assistant
+```
+
+ 2. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Setup Environment Variables
+
+Create a `.env` file with the following:
+
+```
+HF_TOKEN=your_huggingface_token
+OPENAI_API_KEY=your_openai_api_key
+```
+
+ 4. Required Files & Folders
+
+* `kids_youtube_links.csv` — Stores YouTube links by age and theme
+* `story_knowledge/teens/` — Contains genre-based `.txt` files for teen stories
+* `default_template.txt` — Used when no uploaded/edited teen template is provided
+* `story_logs.json` — Automatically generated to store story history
+* `banner1.jpg` — Image displayed in the app
+
+ 5. Run the App
+
+```bash
+python app.py
+```
+
+---
+ File Structure
+
+```
+.
+├── app.py
+├── .env
+├── requirements.txt
+├── kids_youtube_links.csv
+├── story_knowledge/
+│   └── teens/
+│       ├── mystery.txt
+│       ├── comedy.txt
+│       └── ...
+├── default_template.txt
+├── story_logs.json
+└── banner1.jpg
+```
+
+---
+
+Contribution
+
+Feel free to fork this repository and suggest new features like:
+
+* Multilingual support
+* Illustration generation
+* User login/authentication
+* Cloud-based story saving
+
+---
+
+Credits
+
+* Developed as part of the **Decoding Data Science AI Application Challenge**
+* Guided by **Mohammad Arshad**
+
+---
+
+## License
+
+This project is licensed under the MIT License.
+
+---
+
+## Contact
+
+For queries or suggestions, reach out via GitHub Issues or email: \[poojashetty357@gmail.com]
+
 
 
