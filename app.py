@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import openai
 import pandas as pd
 from datetime import datetime
 from dotenv import load_dotenv
@@ -45,6 +46,17 @@ if not openai_key:
 llm = ChatOpenAI(temperature=0.6, model_name="gpt-3.5-turbo", openai_api_key=openai_key)
 teen_memory = ConversationBufferMemory()
 embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+def moderate_output(text):
+    openai.api_key = openai_key  # already loaded from env
+    try:
+        response = openai.Moderation.create(input=text)
+        flagged = response["results"][0]["flagged"]
+        categories = response["results"][0]["categories"]
+        return flagged, categories
+    except Exception as e:
+        print(f"❌ Moderation error: {e}")
+        return False, {}
 
 def load_youtube_links():
     path = os.path.join(os.path.dirname(__file__), "kids_youtube_links.csv")
@@ -140,7 +152,7 @@ kids_prompt = ChatPromptTemplate.from_messages([
          
          "You are a creative assistant that writes fun, educational, and age-appropriate short stories for young children in the UAE. "
          "Your stories should promote good manners, kindness, family values, and respect for others. "
-         "Avoid all violence, scary themes, dark or magical content that could be misunderstood, sensitive topics, or inappropriate language. "
+         "Avoid all violence, scary themes,sexual, dark or magical content that could be misunderstood, sensitive topics, or inappropriate language. "
          "The stories should be simple, imaginative, and culturally appropriate—free from any content that conflicts with Islamic or Emirati values. "
          "Always keep the content child-friendly, respectful, and suitable for a diverse, traditional environment."
     ),
@@ -157,7 +169,13 @@ def generate_kids(age, theme, tone, name, length):
     messages = kids_prompt.format_messages(age=age, theme=theme, tone=tone, name=name, length=length)
     story = llm(messages).content
     save_story_to_file(name, story, age_group="kids", tone=tone, theme=theme)
-    video_html = get_youtube_link(age, theme)  # from your CSV file
+    video_html = get_youtube_link(age, theme) # from your CSV file
+    flagged, categories = moderate_output(story)
+    if flagged:
+        return "⚠️ Story flagged by safety filters. Please try different inputs.", None
+
+    save_story_to_file(name, story, age_group="kids", tone=tone, theme=theme)
+    video_html = get_youtube_link(age, theme)
     return story, video_html
     
 def generate_kids_audio(story):
@@ -188,7 +206,7 @@ sequel_prompt_template = ChatPromptTemplate.from_messages([
     SystemMessagePromptTemplate.from_template(
         "You are a creative assistant generating sequels for teen stories that are engaging, imaginative, and suitable for teenagers in the UAE. "
         "Your sequels must respect cultural values such as family, kindness, honesty, modesty, and emotional growth. "
-        "Avoid content that includes romance, dating, violence, inappropriate language, horror, or anything that goes against Islamic or Emirati cultural norms. "
+        "Avoid content that includes romance,sexual, dating, violence, inappropriate language, horror, or anything that goes against Islamic or Emirati cultural norms. "
         "The continuation should reinforce positive character traits and life lessons, while remaining age-appropriate, respectful, and inspiring for teens living in a traditional, diverse society like the UAE."
 
     ),
@@ -296,6 +314,15 @@ def generate_teen(genre, tone, name, length, uploaded_file=None, edited_text="",
             length=prompt_len
         )
         story = llm(messages).content.strip()
+        # ✅ Check story with moderation filter
+        flagged, categories = moderate_output(story)
+        if flagged:
+            return (
+                "⚠️ This story was flagged by OpenAI's moderation system for safety concerns. "
+                "Please try using a different character name, tone, or inspiration.",
+                uploaded_preview
+            )
+
         last_story_text["story"] = story
         save_story_to_file(name, story, age_group="teen", tone=tone, theme=genre)
         return story, uploaded_preview
