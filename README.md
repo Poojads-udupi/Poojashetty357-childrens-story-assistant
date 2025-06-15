@@ -1,137 +1,112 @@
-Children's Story Assistant-TinyTales AI
+# Children's Story Assistant – TinyTales-AI
 
-Overview
-
-Children's Story Assistant is an AI-powered Gradio application that generates personalized stories for kids and teenagers. Users can choose age groups, tones, themes, and even upload or edit templates for teen stories. The app also offers PDF and audio story exports, story regeneration, and YouTube video suggestions for kids.
+An AI-powered web app to generate culturally safe, creative, and age-appropriate stories for kids and teens in the UAE. Built using Gradio, OpenAI, Hugging Face, and LangChain.
 
 ---
 
-Features
+##  Features
 
- Kids Tab
+### Kids Tab
+- Age-based storytelling (1–3, 4–6, 7–9, 10–12)
+- Themes: Animals, Adventure, Magic, Bedtime
+- Tone customization (Happy, Funny, Gentle, Exciting)
+- Character-based storytelling
+- Audio playback using gTTS
+- PDF story downloads
+- YouTube video suggestions based on age & theme
+- Content moderation using OpenAI Moderation API
 
-* Age-based story generation (1–12 years)
-* Themes: Animals, Adventure, Magic, Bedtime
-* Tones: Happy, Funny, Gentle, Exciting
-* Text-to-speech audio using gTTS
-* Story PDF download (via FPDF)
-* YouTube video recommendations from a local CSV
+### Teens Tab
+- Genre-based story generation (Mystery, Comedy, Drama, Romance, Fantasy)
+- Upload custom templates or use default
+- Preview & edit templates before generation
+- Sequel generation from previous stories
+- RAG-powered inspiration using LlamaIndex
+- Audio & PDF export
+- Moderation guardrails for safe content
 
- Teens Tab
-
-* Genre-based story generation using RAG (VectorStoreIndex)
-* Genres: Mystery, Comedy, Drama, Romance, Fantasy
-* Upload or edit story inspiration templates
-* Regenerate story sequels
-* Audio narration and downloadable PDF
-  
-My Stories Tab
-
-* View saved stories
-* Edit and regenerate stories with different tones/lengths
-* Delete selected stories
-
----
-
-Tech Stack
-
-* **Frontend:** Gradio
-* **Backend:** Python
-* **AI Model:** OpenAI GPT-3.5-Turbo (via LangChain)
-* **Embeddings:** Hugging Face Transformers (`sentence-transformers/all-MiniLM-L6-v2`)
-* **Vector Indexing:** LlamaIndex
-* **Text-to-Speech:** Google TTS (gTTS)
-* **PDF Export:** FPDF
-* **Env Management:** dotenv
+### 📚 My Stories
+- Saved story logs in JSON
+- View, edit, regenerate or delete stories
+- Refresh dropdown for updated view
 
 ---
 
-Setup Instructions
+## 🔧 Tech Stack
 
- 1. Clone the repository
+- **Frontend**: Gradio
+- **Backend**: Python, LangChain, LlamaIndex
+- **LLM**: OpenAI GPT-3.5-turbo
+- **Embedding**: Hugging Face Sentence Transformers
+- **Voice**: gTTS
+- **PDF**: fpdf
+- **Content Safety**: OpenAI Moderation API
 
-```bash
-git clone <your-repo-url>
-cd childrens-story-assistant
-```
+---
 
- 2. Install Dependencies
+## 🛡️ Safety & Cultural Guardrails
 
+- Custom prompt engineering to respect Islamic/Emirati values
+- OpenAI Moderation API to flag unsafe content (violence, sexual, dark themes)
+- Age filters and tone control
+- Safe default inspiration fallback
+
+---
+
+##  How to Run
+
+### 1. Install Requirements
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Setup Environment Variables
-
-Create a `.env` file with the following:
-
+### 2. Set Environment Variables
+Create a `.env` file with:
 ```
+OPENAI_API_KEY=your_openai_key
 HF_TOKEN=your_huggingface_token
-OPENAI_API_KEY=your_openai_api_key
 ```
 
- 4. Required Files & Folders
+### 3. Prepare Data
+- Ensure these files exist:
+  - `default_template.txt`
+  - `kids_youtube_links.csv`
+  - Genre templates inside `story_knowledge/teens/`:
+    - mystery.txt, comedy.txt, etc.
 
-* `kids_youtube_links.csv` — Stores YouTube links by age and theme
-* `story_knowledge/teens/` — Contains genre-based `.txt` files for teen stories
-* `default_template.txt` — Used when no uploaded/edited teen template is provided
-* `story_logs.json` — Automatically generated to store story history
-* `banner1.jpg` — Image displayed in the app
-
- 5. Run the App
-
+4. Launch App
 ```bash
 python app.py
 ```
 
 ---
- File Structure
+
+Folder Structure
 
 ```
-.
 ├── app.py
-├── .env
-├── requirements.txt
+├── story_logs.json
+├── default_template.txt
 ├── kids_youtube_links.csv
 ├── story_knowledge/
 │   └── teens/
 │       ├── mystery.txt
 │       ├── comedy.txt
 │       └── ...
-├── default_template.txt
-├── story_logs.json
-└── banner1.jpg
 ```
 
 ---
 
-Contribution
+ Author
 
-Feel free to fork this repository and suggest new features like:
-
-* Multilingual support
-* Illustration generation
-* User login/authentication
-* Cloud-based story saving
+Pooja Shetty  
+AI Resident | Decoding Data Science  
+🔗 GitHub: [Poojads-udupi](https://github.com/Poojads-udupi)
 
 ---
 
-Credits
+ License
 
-* Developed as part of the **Decoding Data Science AI Application Challenge**
-* Guided by **Mohammad Arshad**
-
----
-
-## License
-
-This project is licensed under the MIT License.
-
----
-
-## Contact
-
-For queries or suggestions, reach out via GitHub Issues or email: \[poojashetty357@gmail.com]
-
+MIT License
 
 
